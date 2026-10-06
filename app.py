@@ -34,6 +34,8 @@ with st.sidebar:
     uploaded_file = st.file_uploader(
         "Upload Financial PDF (e.g. 10-K)",
         type=["pdf"],
+        accept_multiple_files=False,
+        max_upload_size=10,
         help="Upload a single PDF report.",
         key=f"pdf_uploader_{st.session_state.uploader_key}",
     )

@@ -36,7 +36,7 @@ def generate_grounded_answer(
         f"Context:\n{context_text}"
     )
 
-    llm = ChatOpenAI(model=model_name, temperature=0.0, openai_api_key=api_key)
+    llm = ChatOpenAI(model=model_name, openai_api_key=api_key)
 
     response = llm.invoke(
         [
