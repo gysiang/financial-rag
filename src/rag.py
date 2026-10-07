@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Iterator
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 from langchain_community.vectorstores import Chroma
@@ -18,13 +18,13 @@ def retrieve_relevant_chunks(
     return ensemble_retriever.invoke(query)
 
 
-def generate_grounded_answer(
+def stream_grounded_answer(
     query: str,
     retrieved_docs: List[Document],
     api_key: str,
     model_name: str = "gpt-6-luna",
-) -> str:
-    """Formats context with page numbers and instructs the LLM to provide a cited response."""
+) -> Iterator[str]:
+    """Yields the LLM response token-by-token."""
     context_text = "\n\n---\n\n".join(
         [
             f"[Page {doc.metadata.get('page', 0) + 1}]: {doc.page_content}"
@@ -44,16 +44,19 @@ def generate_grounded_answer(
 
     llm = ChatOpenAI(model=model_name, openai_api_key=api_key)
 
-    response = llm.invoke(
+    # Use .stream() instead of .invoke()
+    for chunk in llm.stream(
         [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": query},
         ]
-    )
-    return response.content
+    ):
+        # Yield only the string content so Streamlit can render it smoothly
+        if chunk.content:
+            yield chunk.content
 
 
-def answer_financial_query(
+def stream_financial_query(
     query: str,
     vector_store: Chroma,
     bm25_retriever: BM25Retriever,
@@ -62,5 +65,5 @@ def answer_financial_query(
 ) -> Tuple[str, List[Document]]:
     """Convenience pipeline function executing retrieval followed by generation."""
     docs = retrieve_relevant_chunks(vector_store, bm25_retriever, query, k=k)
-    answer = generate_grounded_answer(query, docs, api_key)
-    return answer, docs
+    answer_stream = stream_grounded_answer(query, docs, api_key)
+    return answer_stream, docs

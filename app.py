@@ -1,6 +1,6 @@
 import streamlit as st
 from src.ingestion import process_pdf_document, clear_vector_store
-from src.rag import answer_financial_query
+from src.rag import stream_financial_query
 from src.helpers import reset_app, render_citations
 
 st.set_page_config(page_title="Financial Report RAG MVP", page_icon="📈", layout="wide")
@@ -125,16 +125,22 @@ if prompt := st.chat_input("Ask a question about this report..."):
 
     # Assistant response
     with st.chat_message("assistant"):
-        with st.spinner("Analyzing context..."):
-            answer, docs = answer_financial_query(
+        # We only want the spinner to show during retrieval, not during generation
+        with st.spinner("Retrieving context..."):
+            answer_stream, docs = stream_financial_query(
                 query=prompt,
                 vector_store=st.session_state.vector_store,
                 bm25_retriever=st.session_state.bm25_retriever,
                 api_key=openai_api_key,
             )
-            st.markdown(answer)
-            render_citations(docs)
+
+        # Stream the output directly to the UI
+        # st.write_stream automatically consumes the generator and returns the final full string
+        full_answer = st.write_stream(answer_stream)
+
+        # Render citations below the streaming text
+        render_citations(docs)
 
     st.session_state.messages.append(
-        {"role": "assistant", "content": answer, "citations": docs}
+        {"role": "assistant", "content": answer_stream, "citations": docs}
     )
