@@ -10,6 +10,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "vector_store" not in st.session_state:
     st.session_state.vector_store = None
+if "bm25_retriever" not in st.session_state:
+    st.session_state.bm25_retriever = None
 if "processed_file" not in st.session_state:
     st.session_state.processed_file = None
 if "total_chunks" not in st.session_state:
@@ -75,13 +77,14 @@ if uploaded_file and openai_api_key:
                 if st.session_state.vector_store is not None:
                     clear_vector_store(st.session_state.vector_store)
 
-                vector_store, chunk_count = process_pdf_document(
+                vector_store, bm25_retriever, chunk_count = process_pdf_document(
                     file_bytes=uploaded_file.getvalue(),
                     filename=uploaded_file.name,
                     api_key=openai_api_key,
                 )
 
                 st.session_state.vector_store = vector_store
+                st.session_state.bm25_retriever = bm25_retriever
                 st.session_state.total_chunks = chunk_count
                 st.session_state.processed_file = uploaded_file.name
                 st.session_state.messages = []
@@ -126,6 +129,7 @@ if prompt := st.chat_input("Ask a question about this report..."):
             answer, docs = answer_financial_query(
                 query=prompt,
                 vector_store=st.session_state.vector_store,
+                bm25_retriever=st.session_state.bm25_retriever,
                 api_key=openai_api_key,
             )
             st.markdown(answer)

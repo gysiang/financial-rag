@@ -6,6 +6,8 @@ def reset_app():
     """Wipes ChromaDB and resets all session variables to fresh initial state."""
     clear_vector_store(st.session_state.vector_store)
     st.session_state.vector_store = None
+    st.session_state.vector_store = None
+    st.session_state.bm25_retriever = None
     st.session_state.processed_file = None
     st.session_state.total_chunks = 0
     st.session_state.messages = []

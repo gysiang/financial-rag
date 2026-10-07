@@ -5,11 +5,12 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
+from langchain_community.retrievers import BM25Retriever
 
 
 def process_pdf_document(
     file_bytes: bytes, filename: str, api_key: str
-) -> Tuple[Chroma, int]:
+) -> Tuple[Chroma, BM25Retriever, int]:
     """Saves uploaded bytes to a temp file, chunks pages, and indexes them in Chroma."""
     suffix = os.path.splitext(filename)[1] or ".pdf"
 
@@ -30,7 +31,8 @@ def process_pdf_document(
             model="text-embedding-3-small", openai_api_key=api_key
         )
         vector_store = Chroma.from_documents(splits, embeddings)
-        return vector_store, len(splits)
+        bm25_retriever = BM25Retriever.from_documents(splits)
+        return vector_store, bm25_retriever, len(splits)
 
     finally:
         if os.path.exists(tmp_path):

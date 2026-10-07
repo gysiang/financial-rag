@@ -10,6 +10,7 @@ dependencies = [
     "langchain-community>=0.4.2",
     "langchain-openai>=1.6.7",
     "pypdf>=6.19.0",
+    "rank-bm25>=0.2.2",
     "streamlit>=1.65.0",
     "tiktoken>=0.14.0",
 ]

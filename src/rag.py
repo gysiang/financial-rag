@@ -2,14 +2,20 @@ from typing import List, Tuple
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 from langchain_community.vectorstores import Chroma
+from langchain_community.retrievers import BM25Retriever
+from langchain_classic.retrievers import EnsembleRetriever
 
 
 def retrieve_relevant_chunks(
-    vector_store: Chroma, query: str, k: int = 4
+    vector_store: Chroma, bm25_retriever: BM25Retriever, query: str, k: int = 4
 ) -> List[Document]:
     """Fetches the top-k most relevant document chunks based on semantic similarity."""
-    retriever = vector_store.as_retriever(search_kwargs={"k": k})
-    return retriever.invoke(query)
+    vector_retriever = vector_store.as_retriever(search_kwargs={"k": k})
+    bm25_retriever.k = k
+    ensemble_retriever = EnsembleRetriever(
+        retrievers=[bm25_retriever, vector_retriever], weights=[0.5, 0.5]
+    )
+    return ensemble_retriever.invoke(query)
 
 
 def generate_grounded_answer(
@@ -48,9 +54,13 @@ def generate_grounded_answer(
 
 
 def answer_financial_query(
-    query: str, vector_store: Chroma, api_key: str, k: int = 4
+    query: str,
+    vector_store: Chroma,
+    bm25_retriever: BM25Retriever,
+    api_key: str,
+    k: int = 4,
 ) -> Tuple[str, List[Document]]:
     """Convenience pipeline function executing retrieval followed by generation."""
-    docs = retrieve_relevant_chunks(vector_store, query, k=k)
+    docs = retrieve_relevant_chunks(vector_store, bm25_retriever, query, k=k)
     answer = generate_grounded_answer(query, docs, api_key)
     return answer, docs
